@@ -31,7 +31,9 @@ class DateTimeInput extends Component {
 
         this.props.input.onChange(date);
         this.props.input.onBlur();
-        this.refs[`${this.props.source}.timePicker`].openDialog();
+        if (!this.props.disableCascadeCalling) {
+            this.refs[`${this.props.source}.timePicker`].openDialog();
+        }
     };
 
     onChangeTime = (_, time) => {
@@ -44,14 +46,14 @@ class DateTimeInput extends Component {
         this.props.input.onBlur();
     };
 
-    /**
-     * This aims to fix a bug created by the conjunction of
-     * redux-form, which expects onBlur to be triggered after onChange, and
-     * material-ui, which triggers onBlur on <DatePicker> when the user clicks
-     * on the input to bring the focus on the calendar rather than the input.
-     *
-     * @see https://github.com/erikras/redux-form/issues/1218#issuecomment-229072652
-     */
+  /**
+   * This aims to fix a bug created by the conjunction of
+   * redux-form, which expects onBlur to be triggered after onChange, and
+   * material-ui, which triggers onBlur on <DatePicker> when the user clicks
+   * on the input to bring the focus on the calendar rather than the input.
+   *
+   * @see https://github.com/erikras/redux-form/issues/1218#issuecomment-229072652
+   */
     onBlur = () => {};
 
     onDismiss = () => this.props.input.onBlur();
@@ -68,45 +70,111 @@ class DateTimeInput extends Component {
             source,
             resource,
             labelTime,
-            timeFormat
+            timeFormat,
+            children,
+            disableCascadeCalling,
+            disableClearDateButton
         } = this.props;
 
-        return (
-          <div>
-            <DatePicker
-            {...input}
-            errorText={touched && error}
-            floatingLabelText={<FieldTitle label={label} source={source} resource={resource} isRequired={isRequired} />}
-            DateTimeFormat={Intl.DateTimeFormat}
-            mode='portrait'
-            container='dialog'
-            autoOk
-            value={datify(input.value)}
-            onChange={this.onChange}
-            onBlur={this.onBlur}
-            onDismiss={this.onDismiss}
-            style={{display: 'inline-block', marginRight: '10px'}}
-            ref={`${this.props.source}.datePicker`}
-            {...options} />
+        let defaultDatePickerOpts = {
+            errorText: touched && error,
+            floatingLabelText: React.createElement(
+                FieldTitle,
+                {
+                    label: label,
+                    source: source,
+                    resource: resource,
+                    isRequired: isRequired
+                }, null
+            ),
+            DateTimeFormat: Intl.DateTimeFormat,
+            mode: 'portrait',
+            container: 'dialog',
+            autoOk: true,
+            value: datify(input.value),
+            onChange: this.onChange,
+            onBlur: this.onBlur,
+            onDismiss: this.onDismiss,
+            style: {display: 'inline-block', marginRight: '10px'},
+            ref: `${this.props.source}.datePicker`
+        }
 
-            <TimePicker
-            {...input}
-            errorText={touched && error}
-            floatingLabelText={<FieldTitle label={labelTime ? labelTime : 'Time(hours, mins.)'} source={source} resource={resource} isRequired={isRequired} />}
-            format={timeFormat ? timeFormat : '24hr'}
-            autoOk
-            value={datify(input.value)}
-            onChange={this.onChangeTime}
-            onBlur={this.onBlur}
-            onDismiss={this.onDismiss}
-            style={{display: 'inline-block'}}
-            ref={`${this.props.source}.timePicker`}
-            {...optionsTime} />
+        let defaultTimePickerOpts = {
+            errorText: touched && error,
+            floatingLabelText: React.createElement(
+                FieldTitle,
+                {
+                    label: labelTime ? labelTime : 'Time(hours, mins.)',
+                    source: source,
+                    resource: resource,
+                    isRequired: isRequired
+                }, null
+            ),
+            format: timeFormat ? timeFormat : '24hr',
+            autoOk: true,
+            value: datify(input.value),
+            onChange: this.onChangeTime,
+            onBlur: this.onBlur,
+            onDismiss: this.onDismiss,
+            style: {display: 'inline-block', marginRight: '10px'},
+            ref: `${this.props.source}.timePicker`
+        }
 
+        let clearDateElement = (
             <IconButton onClick={this.clearDate} tooltip="Clear Date" tooltipPosition="top-right">
-              <BackspaceIcon color='grey' hoverColor='black'/>
+                <BackspaceIcon color='grey' hoverColor='black'/>
             </IconButton>
-          </div>
+        )
+
+        if (children) {
+            return (
+                <div>
+                { children.map(
+                    (child, index) => {
+                        let childOpts = {};
+                        if (child.type === DatePicker) {
+                            childOpts = defaultDatePickerOpts;
+                        } else if (child.type === TimePicker){
+                            childOpts = defaultTimePickerOpts;
+                        }
+                        return React.createElement(
+                            child.type,
+                            {
+                            ...input,
+                            ...childOpts,
+                            ...child.props.options,
+                            errorText: touched && error,
+                            value: datify(input.value),
+                            key: index
+                            },
+                            null
+                        );
+                    }
+                ) }
+                {
+                    !disableClearDateButton ?
+                    clearDateElement : null
+                }
+                </div>
+            )
+        };
+
+        return (
+            <div>
+                <DatePicker
+                    {...input}
+                    {...defaultDatePickerOpts}
+                    {...options} />
+
+                <TimePicker
+                    {...input}
+                    {...defaultTimePickerOpts}
+                    {...optionsTime} />
+                {
+                    !disableClearDateButton ?
+                    clearDateElement : null
+                }
+            </div>
         );
     }
 }
@@ -130,4 +198,4 @@ DateTimeInput.defaultProps = {
 };
 
 export default DateTimeInput;
-
+export { DatePicker, TimePicker };
