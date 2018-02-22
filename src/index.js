@@ -4,7 +4,7 @@ import DatePicker from 'material-ui/DatePicker';
 import TimePicker from 'material-ui/TimePicker';
 import BackspaceIcon from 'material-ui/svg-icons/content/backspace';
 import IconButton from 'material-ui/IconButton';
-import {FieldTitle} from 'admin-on-rest';
+import {FieldTitle} from 'react-admin';
 
 export const datify = input => {
     if (!input) {
